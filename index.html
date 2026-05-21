@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2685.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="ru"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Калькулятор китов&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: Arial; text-align: center; padding: 20px; background: #e0f7fa; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.container { background: white; padding: 20px; border-radius: 20px; max-width: 600px; margin: auto; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas { background: #e0f2f1; margin: 10px; border-radius: 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>button { background: #00897b; color: white; padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.stable { color: green; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.unstable { color: red; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1">&lt;div class="container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;🐋 Калькулятор китов&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;p&gt;Модель: u(t+1) = u(t) × exp(r × (1 − u(t−1)))&lt;/p&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;label&gt;Параметр r: &lt;span id="rValue"&gt;1.0&lt;/span&gt;&lt;/label&gt;&lt;br&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;input type="range" id="rSlider" min="0.5" max="1.8" step="0.01" value="1.0" style="width: 80%;"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;br&gt;&lt;br&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button onclick="simulate()"&gt;Рассчитать&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;canvas id="whaleCanvas" width="200" height="100"&gt;&lt;/canvas&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="result"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;canvas id="graphCanvas" width="500" height="200"&gt;&lt;/canvas&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>function ricerModel(r, u0, u1, steps) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let u = [u0, u1];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 2; i &lt;= steps; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>u.push(u[u.length-1] * Math.exp(r * (1 - u[u.length-2])));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return u;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function drawWhale(size, isStable) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let canvas = document.getElementById('whaleCanvas');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let ctx = canvas.getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.clearRect(0, 0, canvas.width, canvas.height);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = isStable ? "#2e7d32" : "#b71c1c";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillRect(20, 30, 30 + size*30, 40);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = "white";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillRect(25, 20, 10, 10);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = "black";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillRect(28, 22, 5, 5);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = "black";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.font = "20px Arial";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillText(isStable ? "😊" : "😢", 100, 60);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function drawGraph(data, r) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let canvas = document.getElementById('graphCanvas');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let ctx = canvas.getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let w = canvas.width, h = canvas.height;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.clearRect(0, 0, w, h);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let maxVal = Math.max(...data);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let scaleY = (h-40)/maxVal;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.beginPath();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i=1; i&lt;data.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let x1 = (i-1)*w/(data.length-1);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let y1 = h-20 - data[i-1]*scaleY;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let x2 = i*w/(data.length-1);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>let y2 = h-20 - data[i]*scaleY;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.moveTo(x1, y1);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.lineTo(x2, y2);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.stroke();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillText("r = "+r.toFixed(2), 10, 20);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function simulate() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let r = parseFloat(document.getElementById('rSlider').value);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('rValue').innerText = r;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let data = ricerModel(r, 0.2, 0.3, 80);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let last = data[data.length-1];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let isStable = (last &gt; 0.1 &amp;&amp; last &lt; 1.5 &amp;&amp; r &lt; 1.0);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('result').innerHTML = "&lt;strong&gt;Численность: "+last.toFixed(3)+"&lt;/strong&gt;&lt;br&gt;"+(isStable ? "✅ Устойчиво" : "⚠️ Неустойчиво/колебания");</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('result').className = isStable ? "stable" : "unstable";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>drawWhale(Math.min(1.2, Math.max(0.2, last)), isStable);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>drawGraph(data, r);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>window.onload = simulate;</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>

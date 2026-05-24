@@ -1,646 +1,517 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор китов — динамика популяции</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none; /* легкий эффект, чтобы не мешать тексту */
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        body {
-            min-height: 100vh;
-            background: linear-gradient(145deg, #0a2f3a 0%, #0b4f5c 100%);
-            font-family: 'Segoe UI', 'Poppins', 'Quicksand', system-ui, -apple-system, 'Roboto', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 20px;
-            position: relative;
-            overflow-x: hidden;
-        }
+<title>Модель Рикера — исследование динамики</title>
 
-        /* ========= ФОНОВЫЙ КИТ (полностью CSS + градиенты, без картинок) ========= */
-        .ocean-whale {
-            position: fixed;
-            bottom: 5%;
-            right: -30px;
-            width: 450px;
-            height: 280px;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.2;
-            transform: scaleX(-1);
-            transition: opacity 0.5s ease;
-        }
+<style>
 
-        /* При наведении на карточку кит становится чуть ярче — игриво */
-        .container:hover ~ .ocean-whale,
-        body:has(.container:hover) .ocean-whale {
-            opacity: 0.4;
-        }
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-        /* Рисуем кита чисто на CSS */
-        .whale-bg {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .whale-body {
-            position: absolute;
-            bottom: 30px;
-            right: 20px;
-            width: 380px;
-            height: 160px;
-            background: radial-gradient(ellipse at 30% 50%, #1c6d7a, #0f4c5c);
-            border-radius: 60% 40% 50% 50% / 70% 60% 40% 30%;
-            box-shadow: 0 20px 30px rgba(0,0,0,0.3);
-        }
-        .whale-head {
-            position: absolute;
-            right: 0;
-            top: -20px;
-            width: 140px;
-            height: 110px;
-            background: radial-gradient(circle at 70% 40%, #237e8c, #115a68);
-            border-radius: 60% 40% 55% 45% / 65% 55% 45% 35%;
-            transform: rotate(5deg);
-        }
-        .whale-eye {
-            position: absolute;
-            right: 35px;
-            top: 40px;
-            width: 14px;
-            height: 14px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 3px #022c33;
-        }
-        .whale-eye:after {
-            content: '';
-            position: absolute;
-            top: 3px;
-            right: 2px;
-            width: 5px;
-            height: 5px;
-            background: #01161e;
-            border-radius: 50%;
-        }
-        .whale-smile {
-            position: absolute;
-            right: 20px;
-            top: 70px;
-            width: 28px;
-            height: 12px;
-            border-radius: 40%;
-            border-bottom: 3px solid #cbe7ed;
-            transform: rotate(4deg);
-        }
-        .whale-fin {
-            position: absolute;
-            bottom: 50px;
-            left: 60px;
-            width: 55px;
-            height: 55px;
-            background: #0e5e6b;
-            border-radius: 100% 0% 80% 20% / 60% 50% 50% 40%;
-            transform: rotate(25deg);
-            opacity: 0.9;
-        }
-        .whale-tail {
-            position: absolute;
-            bottom: 30px;
-            left: -45px;
-            width: 90px;
-            height: 80px;
-            background: #0e5e6b;
-            clip-path: polygon(0% 35%, 40% 20%, 60% 30%, 100% 0%, 85% 45%, 100% 90%, 55% 70%, 30% 85%);
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
-        }
-        .water-spray {
-            position: absolute;
-            right: 80px;
-            top: -25px;
-            width: 40px;
-            height: 45px;
-        }
-        .spray {
-            position: absolute;
-            background: #b3e4f0;
-            border-radius: 60% 40% 50% 50%;
-            opacity: 0.6;
-            animation: gentleFloat 3s infinite ease-in-out;
-        }
-        .spray1 { width: 12px; height: 22px; left: 5px; top: 0; transform: rotate(-15deg);}
-        .spray2 { width: 16px; height: 30px; left: 15px; top: -8px; transform: rotate(5deg); animation-delay: 0.3s;}
-        .spray3 { width: 10px; height: 18px; left: 28px; top: 2px; transform: rotate(20deg); animation-delay: 0.6s;}
-        @keyframes gentleFloat {
-            0% { transform: translateY(0px) scale(1); opacity: 0.5;}
-            50% { transform: translateY(-12px) scale(1.1); opacity: 0.8;}
-            100% { transform: translateY(0px) scale(1); opacity: 0.5;}
-        }
-        /* bubbles */
-        .bubbles {
-            position: absolute;
-            bottom: 10px;
-            left: 20px;
-            width: 100px;
-            height: 60px;
-        }
-        .bub {
-            position: absolute;
-            background: radial-gradient(circle, #9fd9e6, #62b5c7);
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: rise 4s infinite;
-        }
-        .bub1 { width: 8px; height: 8px; bottom: 0; left: 10px; animation-duration: 2.5s; }
-        .bub2 { width: 12px; height: 12px; bottom: 5px; left: 30px; animation-duration: 3.2s; animation-delay: 0.8s; }
-        .bub3 { width: 6px; height: 6px; bottom: 15px; left: 60px; animation-duration: 2s; animation-delay: 1.2s; }
-        @keyframes rise {
-            0% { transform: translateY(0) scale(0.8); opacity: 0.7;}
-            100% { transform: translateY(-60px) scale(1.3); opacity: 0;}
-        }
+body{
+    min-height:100vh;
+    background:linear-gradient(135deg,#062630,#0b4d5a);
+    font-family:'Segoe UI',sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:30px;
+    color:#08363d;
+}
 
-        /* главная карточка — стекло + градиент */
-        .container {
-            position: relative;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(3px);
-            border-radius: 56px;
-            max-width: 720px;
-            width: 100%;
-            padding: 28px 32px 40px;
-            box-shadow: 0 30px 45px rgba(0, 20, 30, 0.5), 0 0 0 1px rgba(255,255,240,0.2);
-            transition: transform 0.2s ease, box-shadow 0.3s;
-            border: 1px solid rgba(255,255,210,0.5);
-        }
+.container{
+    width:100%;
+    max-width:950px;
+    background:rgba(255,255,255,0.96);
+    border-radius:40px;
+    padding:35px;
+    box-shadow:0 25px 45px rgba(0,0,0,0.35);
+}
 
-        .container:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 40px 55px rgba(0, 0, 0, 0.5);
-            background: rgba(255, 255, 250, 0.96);
-        }
+h1{
+    font-size:2.4rem;
+    margin-bottom:10px;
+    color:#006064;
+}
 
-        h1 {
-            font-size: 2.4rem;
-            background: linear-gradient(135deg, #006064, #00897b, #2c7a64);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            text-shadow: 2px 2px 8px rgba(0,50,40,0.1);
-            letter-spacing: -0.5px;
-            display: inline-block;
-            margin-bottom: 8px;
-        }
+.subtitle{
+    background:#e0f7f4;
+    padding:12px 18px;
+    border-radius:20px;
+    margin-bottom:25px;
+    line-height:1.5;
+    color:#134e56;
+}
 
-        .sub {
-            color: #1f6d5e;
-            font-weight: 500;
-            border-left: 4px solid #00b2a9;
-            padding-left: 16px;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-            background: #e0f2f180;
-            border-radius: 30px;
-            width: fit-content;
-        }
+.formula{
+    background:#eef7f8;
+    border-radius:24px;
+    padding:18px;
+    text-align:center;
+    font-size:1.3rem;
+    font-weight:bold;
+    margin-bottom:25px;
+    color:#004d40;
+    font-family:monospace;
+}
 
-        .model-card {
-            background: #eef7f5;
-            padding: 12px 18px;
-            border-radius: 48px;
-            font-family: monospace;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #004d47;
-            margin: 15px 0 10px;
-            box-shadow: inset 0 1px 4px #b2dfdb, 0 4px 12px rgba(0,0,0,0.05);
-        }
+.section{
+    margin-bottom:28px;
+}
 
-        .param-panel {
-            background: #ffffffc9;
-            border-radius: 48px;
-            padding: 16px 20px;
-            margin: 20px 0;
-            box-shadow: 0 8px 18px rgba(0, 32, 32, 0.1);
-        }
+.section-title{
+    font-size:1.1rem;
+    font-weight:bold;
+    margin-bottom:14px;
+    color:#00695c;
+}
 
-        .slider-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
+.slider-block{
+    margin-bottom:18px;
+}
 
-        .slider-label {
-            font-weight: 700;
-            background: #007e6b30;
-            padding: 6px 18px;
-            border-radius: 40px;
-            color: #00695c;
-        }
+.slider-row{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    flex-wrap:wrap;
+}
 
-        input[type="range"] {
-            flex: 2;
-            min-width: 180px;
-            height: 6px;
-            -webkit-appearance: none;
-            background: linear-gradient(90deg, #00bfa5, #ffb74d);
-            border-radius: 10px;
-            outline: none;
-        }
-        input[type="range"]:focus {
-            outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 22px;
-            height: 22px;
-            background: #f0f3f2;
-            border-radius: 50%;
-            border: 2px solid #00897b;
-            box-shadow: 0 2px 8px black;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-            background: #a7ffeb;
-        }
+.slider-label{
+    min-width:160px;
+    font-weight:600;
+}
 
-        button {
-            background: linear-gradient(95deg, #00897b, #00acc1);
-            border: none;
-            font-size: 1.25rem;
-            font-weight: bold;
-            padding: 12px 28px;
-            border-radius: 60px;
-            color: white;
-            cursor: pointer;
-            transition: 0.25s;
-            box-shadow: 0 6px 0 #004d40;
-            width: 80%;
-            letter-spacing: 1px;
-        }
-        button:active {
-            transform: translateY(3px);
-            box-shadow: 0 3px 0 #004d40;
-        }
+.value-box{
+    background:#00695c;
+    color:white;
+    padding:6px 14px;
+    border-radius:20px;
+    font-weight:bold;
+    min-width:65px;
+    text-align:center;
+}
 
-        .whale-icon-canvas {
-            background: #c8e6e0;
-            border-radius: 64px;
-            padding: 10px;
-            margin: 15px 0;
-            display: inline-block;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
+input[type="range"]{
+    flex:1;
+    min-width:220px;
+    height:6px;
+    border-radius:10px;
+    appearance:none;
+    background:linear-gradient(to right,#00bfa5,#4db6ac);
+}
 
-        .result-card {
-            background: #fef9e6;
-            padding: 16px;
-            border-radius: 48px;
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin: 20px 0 10px;
-            transition: 0.2s;
-        }
+input[type="range"]::-webkit-slider-thumb{
+    appearance:none;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:white;
+    border:2px solid #00796b;
+    cursor:pointer;
+}
 
-        .stable {
-            background: #c8e6df;
-            color: #1b5e20;
-            border-left: 12px solid #2e7d32;
-        }
-        .unstable {
-            background: #ffedea;
-            color: #b71c1c;
-            border-left: 12px solid #d32f2f;
-        }
+.info-box{
+    background:#f4fbfa;
+    border-left:6px solid #009688;
+    padding:18px;
+    border-radius:20px;
+    margin-top:15px;
+    line-height:1.7;
+}
 
-        .graph-container {
-            background: #f4fefb;
-            border-radius: 32px;
-            padding: 12px;
-            margin-top: 20px;
-            box-shadow: inset 0 0 0 2px white, 0 5px 18px rgba(0,0,0,0.1);
-        }
+.result-box{
+    margin-top:25px;
+    padding:18px;
+    border-radius:24px;
+    font-size:1.05rem;
+    font-weight:600;
+}
 
-        canvas#graphCanvas {
-            background: #ffffffd9;
-            border-radius: 28px;
-            width: 100%;
-            height: auto;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-        }
-        .flex-between {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
+.stable{
+    background:#dff5ea;
+    color:#1b5e20;
+}
 
-        footer {
-            font-size: 0.7rem;
-            text-align: center;
-            margin-top: 20px;
-            color: #1e5a54;
-        }
-        @media (max-width: 550px) {
-            .container { padding: 20px; }
-            h1 { font-size: 1.8rem; }
-            button { width: 100%; }
-        }
-    </style>
+.oscillation{
+    background:#fff3d9;
+    color:#8d6000;
+}
+
+.unstable{
+    background:#ffe4e1;
+    color:#b71c1c;
+}
+
+canvas{
+    width:100%;
+    background:white;
+    border-radius:28px;
+    margin-top:20px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+}
+
+.footer{
+    margin-top:20px;
+    font-size:0.9rem;
+    color:#35656d;
+    text-align:center;
+}
+
+</style>
 </head>
+
 <body>
 
-<!-- Фоновый океанский кит, нарисованный чисто в CSS (без загрузки картинок) -->
-<div class="ocean-whale">
-    <div class="whale-bg">
-        <div class="whale-body"></div>
-        <div class="whale-head">
-            <div class="whale-eye"></div>
-            <div class="whale-smile"></div>
-        </div>
-        <div class="whale-fin"></div>
-        <div class="whale-tail"></div>
-        <div class="water-spray">
-            <div class="spray spray1"></div>
-            <div class="spray spray2"></div>
-            <div class="spray spray3"></div>
-        </div>
-        <div class="bubbles">
-            <div class="bub bub1"></div>
-            <div class="bub bub2"></div>
-            <div class="bub bub3"></div>
-        </div>
-    </div>
+<div class="container">
+
+<h1>Исследование модели Рикера</h1>
+
+<div class="subtitle">
+Данная модель описывает динамику популяции с запаздыванием.
+Пользователь может изменять параметр роста и начальные условия,
+наблюдая изменение поведения решений динамической системы.
 </div>
 
-<div class="container">
-    <div class="flex-between">
-        <h1>🐋 Калькулятор китов</h1>
-        <div style="font-size: 2rem;">🌊</div>
-    </div>
-    <div class="sub">Модель запаздывающей динамики Рикера (биология популяций)</div>
-    
-    <div class="model-card">
-        u(t+1) = u(t) × exp( r × ( 1 − u(t−1) ) )
-    </div>
+<div class="formula">
+u(t+1) = u(t) · exp(r · (1 − u(t−1)))
+</div>
 
-    <div class="param-panel">
-        <div class="slider-container">
-            <span class="slider-label">🐟 Параметр роста r:</span>
-            <input type="range" id="rSlider" min="0.5" max="1.8" step="0.01" value="1.0">
-            <span id="rValue" style="background: #00695c; padding: 6px 18px; border-radius: 30px; color:white; font-weight:bold;">1.00</span>
-        </div>
-        <div style="font-size: 0.8rem; margin-top: 12px; opacity:0.8;">
-            ⚡ r &lt; 1.0 → устойчивость ⋆ r &gt; 1.2 → колебания/хаос
-        </div>
-    </div>
-    
-    <div style="display: flex; justify-content: center; margin: 8px 0 10px;">
-        <button onclick="simulate()">🐋 Рассчитать динамику 🌊</button>
-    </div>
+<div class="info-box">
+<b>Обозначения:</b><br><br>
 
-    <!-- Кит-визуализация (canvas + анимация) -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <div class="whale-icon-canvas">
-            <canvas id="whaleCanvas" width="180" height="100" style="display: block; margin:0 auto;"></canvas>
-        </div>
-        <div id="result" class="result-card stable" style="flex:1; margin-left: 12px;">
-            <strong>📊 Численность: </strong> —
-        </div>
-    </div>
-    
-    <!-- График -->
-    <div class="graph-container">
-        <canvas id="graphCanvas" width="500" height="220" style="width:100%; height:auto; max-width:100%;"></canvas>
-        <div style="font-size: 11px; text-align: center; margin-top: 8px;">📈 временной ряд (последние 80 шагов)</div>
-    </div>
-    <footer>
-        ⚓ Модель учитывает влияние предыдущего поколения | Устойчивая популяция = счастливый кит 😊
-    </footer>
+• u(t) — относительная численность популяции в момент времени t<br>
+• r — параметр роста популяции<br>
+• u(t−1) — влияние предыдущего поколения (запаздывание)<br><br>
+
+Стационарное состояние модели:
+<b>u* = 1</b>
+</div>
+
+<div class="section">
+
+<div class="section-title">
+Параметры модели
+</div>
+
+<div class="slider-block">
+<div class="slider-row">
+
+<div class="slider-label">
+Параметр роста r
+</div>
+
+<input type="range" id="rSlider"
+min="0.2"
+max="2"
+step="0.01"
+value="1">
+
+<div class="value-box" id="rValue">
+1.00
+</div>
+
+</div>
+</div>
+
+<div class="slider-block">
+<div class="slider-row">
+
+<div class="slider-label">
+Начальное условие u(-1)
+</div>
+
+<input type="range" id="u0Slider"
+min="0.1"
+max="2"
+step="0.01"
+value="0.8">
+
+<div class="value-box" id="u0Value">
+0.80
+</div>
+
+</div>
+</div>
+
+<div class="slider-block">
+<div class="slider-row">
+
+<div class="slider-label">
+Начальное условие u(0)
+</div>
+
+<input type="range" id="u1Slider"
+min="0.1"
+max="2"
+step="0.01"
+value="0.9">
+
+<div class="value-box" id="u1Value">
+0.90
+</div>
+
+</div>
+</div>
+
+</div>
+
+<div id="resultBox" class="result-box stable">
+Решение стремится к стационарному состоянию.
+</div>
+
+<canvas id="graphCanvas" width="850" height="420"></canvas>
+
+<div class="footer">
+Интерактивная визуализация динамики дискретной модели Рикера с запаздыванием
+</div>
+
 </div>
 
 <script>
-    // Улучшенная модель Рикера с запаздыванием на 1 шаг
-    function ricerModel(r, u0, u1, steps) {
-        let u = [u0, u1];
-        for (let i = 2; i <= steps; i++) {
-            // u(t) = u(t-1) * exp(r * (1 - u(t-2)))
-            let next = u[u.length-1] * Math.exp(r * (1 - u[u.length-2]));
-            // добавляем легкое ограничение для численной стабильности (но не искажаем модель)
-            if (isNaN(next) || !isFinite(next)) next = 0.01;
-            if (next > 3.0) next = 2.5;   // биологический предел (переполнение)
-            u.push(next);
+
+function rickerModel(r, uMinus1, u0, steps){
+
+    let u = [uMinus1, u0];
+
+    for(let t = 1; t < steps; t++){
+
+        let next =
+            u[t] * Math.exp(r * (1 - u[t-1]));
+
+        if(!isFinite(next) || isNaN(next)){
+            next = 0;
         }
-        return u;
+
+        u.push(next);
     }
-    
-    // рисование динамического кита по численности + эмоция + размер
-    function drawWhale(population, isStable) {
-        let canvas = document.getElementById('whaleCanvas');
-        let ctx = canvas.getContext('2d');
-        let w = canvas.width = 180;    // переопределяем четкость
-        let h = canvas.height = 100;
-        ctx.clearRect(0, 0, w, h);
-        
-        // пропорциональный размер: от 0.2 до 1.6 -> масштаб тела
-        let sizeFactor = Math.min(1.2, Math.max(0.4, population / 1.2));
-        let bodyWidth = 55 + sizeFactor * 35;
-        let bodyHeight = 35 + sizeFactor * 12;
-        let bodyX = 20;
-        let bodyY = h - bodyHeight - 8;
-        
-        // Цвет: если устойчиво - ярко-зеленый/бирюзовый, иначе тревожный оранжевый
-        ctx.fillStyle = isStable ? "#2c7a47" : "#bf5b2c";
-        ctx.shadowBlur = 0;
-        ctx.beginPath();
-        ctx.ellipse(bodyX + bodyWidth/2, bodyY + bodyHeight/2, bodyWidth/2, bodyHeight/2, 0, 0, Math.PI*2);
-        ctx.fill();
-        // голова кита (овал справа)
-        ctx.fillStyle = isStable ? "#3e9f62" : "#d46b32";
-        ctx.beginPath();
-        ctx.ellipse(bodyX + bodyWidth - 10, bodyY + bodyHeight/2 - 2, bodyHeight/1.8, bodyHeight/1.5, 0, 0, Math.PI*2);
-        ctx.fill();
-        // глаз
-        ctx.fillStyle = "white";
-        ctx.beginPath();
-        ctx.arc(bodyX + bodyWidth - 18, bodyY + bodyHeight/2 - 6, 5, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle = "#010101";
-        ctx.beginPath();
-        ctx.arc(bodyX + bodyWidth - 20, bodyY + bodyHeight/2 - 7, 2.2, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle = "white";
-        ctx.beginPath();
-        ctx.arc(bodyX + bodyWidth - 21, bodyY + bodyHeight/2 - 8, 1, 0, Math.PI*2);
-        ctx.fill();
-        
-        // ротик-улыбка/грусть
-        ctx.beginPath();
-        ctx.strokeStyle = "#2d2b26";
-        ctx.lineWidth = 2;
-        if(isStable){
-            ctx.arc(bodyX + bodyWidth - 25, bodyY + bodyHeight/2 + 2, 7, 0.05, Math.PI - 0.05);
-            ctx.stroke();
-        } else {
-            ctx.arc(bodyX + bodyWidth - 25, bodyY + bodyHeight/2 + 5, 6, Math.PI + 0.1, Math.PI*2 - 0.1);
-            ctx.stroke();
-        }
-        // спинной плавник
-        ctx.fillStyle = isStable ? "#226b42" : "#a3451f";
-        ctx.beginPath();
-        ctx.moveTo(bodyX + bodyWidth*0.5, bodyY - 5);
-        ctx.lineTo(bodyX + bodyWidth*0.65, bodyY - 18);
-        ctx.lineTo(bodyX + bodyWidth*0.8, bodyY - 5);
-        ctx.fill();
-        
-        // эмоция-смайлик текстом
-        ctx.font = "22px 'Segoe UI Emoji'";
-        ctx.fillStyle = isStable ? "#1f5427" : "#a1210b";
-        ctx.fillText(isStable ? "😊" : "😵‍💫", bodyX + bodyWidth - 38, bodyY + bodyHeight - 6);
-        
-        // отображение численности прямо на ките
-        ctx.font = "bold 10px 'Quicksand'";
-        ctx.fillStyle = "#041f1a";
-        ctx.shadowBlur = 0;
-        ctx.fillText(`pop: ${population.toFixed(3)}`, bodyX+5, bodyY-4);
+
+    return u;
+}
+
+function analyzeBehavior(data){
+
+    let last = data.slice(-20);
+
+    let mean =
+        last.reduce((a,b)=>a+b,0)/last.length;
+
+    let variance = 0;
+
+    for(let x of last){
+        variance += (x-mean)*(x-mean);
     }
-    
-    function drawGraph(data, r) {
-        let canvas = document.getElementById('graphCanvas');
-        let ctx = canvas.getContext('2d');
-        let w = canvas.parentElement.clientWidth > 100 ? canvas.parentElement.clientWidth : 500;
-        canvas.width = w;
-        canvas.height = 220;
-        let h = canvas.height;
-        
-        ctx.clearRect(0, 0, w, h);
-        if(!data.length) return;
-        let maxVal = Math.max(...data, 1.2);
-        let minVal = Math.min(...data, 0);
-        let range = maxVal - minVal;
-        if(range < 0.05) range = 0.5;
-        let scaleY = (h - 50) / range;
-        let offsetY = 30;
-        
-        // сетка
-        ctx.beginPath();
-        ctx.strokeStyle = "#b2dfdb";
-        ctx.lineWidth = 0.8;
-        for(let i=0; i<=4; i++){
-            let y = offsetY + i * (h-50)/4;
-            ctx.moveTo(30, y);
-            ctx.lineTo(w-15, y);
-            ctx.stroke();
-        }
-        // подписи
-        ctx.fillStyle = "#1f6d5a";
-        ctx.font = "10px monospace";
-        for(let i=0; i<=4; i++){
-            let val = maxVal - (i/4)*range;
-            ctx.fillText(val.toFixed(2), 5, offsetY + i*(h-50)/4 + 3);
-        }
-        
-        // график линии
-        let n = data.length;
-        if(n < 2) return;
-        let stepX = (w - 45) / (n-1);
-        ctx.beginPath();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = "#00897b";
-        ctx.shadowBlur = 3;
-        ctx.shadowColor = "#004d40";
-        for (let i=0; i<n; i++) {
-            let x = 30 + i * stepX;
-            let y = offsetY + (h-50) - (data[i] - minVal) * scaleY;
-            if(i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        // точки
-        ctx.fillStyle = "#ffb74d";
-        for(let i=0; i<n; i+= Math.max(1, Math.floor(n/30))){
-            let x = 30 + i * stepX;
-            let y = offsetY + (h-50) - (data[i] - minVal) * scaleY;
-            ctx.beginPath();
-            ctx.arc(x, y, 2.5, 0, Math.PI*2);
-            ctx.fill();
-            ctx.fillStyle = "#e65100";
-            ctx.beginPath();
-            ctx.arc(x, y, 1.2, 0, Math.PI*2);
-            ctx.fill();
-            ctx.fillStyle = "#ffb74d";
-        }
-        ctx.fillStyle = "#004d40";
-        ctx.font = "bold 12px 'Segoe UI'";
-        ctx.fillText(`r = ${r.toFixed(3)}`, w-70, 22);
-        ctx.fillText("шаги (t)", w/2-20, h-8);
+
+    variance /= last.length;
+
+    if(mean < 0.05 || mean > 3){
+        return {
+            text:"Система демонстрирует потерю устойчивости.",
+            className:"unstable"
+        };
     }
-    
-    function simulate() {
-        let r = parseFloat(document.getElementById('rSlider').value);
-        document.getElementById('rValue').innerText = r.toFixed(3);
-        // начальные условия (u0, u1) = 0.2, 0.3 — классика
-        let u0 = 0.2;
-        let u1 = 0.3;
-        let steps = 80;
-        let data = ricerModel(r, u0, u1, steps);
-        let lastVal = data[data.length-1];
-        // критерий устойчивости не только по r, но и по малым флуктуациям
-        let lastSegment = data.slice(-15);
-        let variance = 0;
-        let meanLast = lastSegment.reduce((a,b)=>a+b,0)/lastSegment.length;
-        for(let v of lastSegment) variance += (v-meanLast)**2;
-        variance /= lastSegment.length;
-        let isStable = (r < 1.05) && (lastVal > 0.1 && lastVal < 1.5) && variance < 0.03;
-        // дополнительный запас: если популяция близка к нулю или взлетает
-        if(lastVal < 0.08 || lastVal > 1.6) isStable = false;
-        if(r < 0.85 && lastVal > 0.2) isStable = true;
-        
-        let stabilityText = isStable ? "✅ Устойчивая популяция • Кит счастлив" : "⚠️ Неустойчивость / Колебания • Риск";
-        document.getElementById('result').innerHTML = `<strong>🐋 Текущая численность: ${lastVal.toFixed(4)}</strong><br>${stabilityText}`;
-        let resultDiv = document.getElementById('result');
-        resultDiv.className = "result-card " + (isStable ? "stable" : "unstable");
-        
-        // анимируем кита
-        drawWhale(lastVal, isStable);
-        drawGraph(data, r);
-        
-        // если популяция взлетает выше 1.5, добавим предупреждение в график
-        let canvasGraph = document.getElementById('graphCanvas');
-        let ctx = canvasGraph.getContext('2d');
-        if(lastVal > 1.4 && !isStable){
-            ctx.font = "bold 14px system-ui";
-            ctx.fillStyle = "#c62828";
-            ctx.shadowBlur = 0;
-            ctx.fillText("⚠️ перегруз экосистемы", canvasGraph.width-150, 50);
-        } else if(lastVal < 0.15 && !isStable){
-            ctx.fillStyle = "#d84315";
-            ctx.fillText("⚠️ на грани исчезновения", canvasGraph.width-160, 70);
-        }
+
+    if(variance < 0.0005){
+        return {
+            text:"Решение стремится к стационарному состоянию u*=1.",
+            className:"stable"
+        };
     }
-    
-    window.onload = () => {
-        simulate();
-        // синхронизация ползунка в реальном времени (опционально)
-        const slider = document.getElementById('rSlider');
-        slider.addEventListener('input', () => {
-            document.getElementById('rValue').innerText = parseFloat(slider.value).toFixed(3);
-            simulate();
-        });
+
+    return {
+        text:"Наблюдается колебательный режим.",
+        className:"oscillation"
     };
+}
+
+function drawGraph(data, r){
+
+    const canvas =
+        document.getElementById("graphCanvas");
+
+    const ctx =
+        canvas.getContext("2d");
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0,0,w,h);
+
+    const maxVal =
+        Math.max(...data,1.2);
+
+    const minVal =
+        Math.min(...data,0);
+
+    const range =
+        maxVal - minVal;
+
+    const left = 60;
+    const right = 25;
+    const top = 30;
+    const bottom = 50;
+
+    const plotW = w-left-right;
+    const plotH = h-top-bottom;
+
+    function X(i){
+        return left + i*plotW/(data.length-1);
+    }
+
+    function Y(v){
+        return top + plotH -
+            (v-minVal)*plotH/range;
+    }
+
+    ctx.strokeStyle="#d0e7e5";
+    ctx.lineWidth=1;
+
+    for(let i=0;i<=5;i++){
+
+        let y = top + i*plotH/5;
+
+        ctx.beginPath();
+        ctx.moveTo(left,y);
+        ctx.lineTo(w-right,y);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle="#004d40";
+    ctx.font="12px Arial";
+
+    for(let i=0;i<=5;i++){
+
+        let val =
+            maxVal - i*range/5;
+
+        ctx.fillText(
+            val.toFixed(2),
+            10,
+            top + i*plotH/5 + 4
+        );
+    }
+
+    ctx.beginPath();
+    ctx.lineWidth=3;
+    ctx.strokeStyle="#00897b";
+
+    for(let i=0;i<data.length;i++){
+
+        let x = X(i);
+        let y = Y(data[i]);
+
+        if(i===0){
+            ctx.moveTo(x,y);
+        }else{
+            ctx.lineTo(x,y);
+        }
+    }
+
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle="#d32f2f";
+    ctx.lineWidth=2;
+    ctx.setLineDash([8,6]);
+
+    let equilibriumY = Y(1);
+
+    ctx.moveTo(left,equilibriumY);
+    ctx.lineTo(w-right,equilibriumY);
+
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    ctx.fillStyle="#b71c1c";
+    ctx.font="bold 13px Arial";
+
+    ctx.fillText(
+        "u* = 1",
+        w-90,
+        equilibriumY-8
+    );
+
+    ctx.fillStyle="#004d40";
+
+    ctx.fillText(
+        `r = ${r.toFixed(2)}`,
+        w-100,
+        22
+    );
+
+    ctx.fillText(
+        "t",
+        w/2,
+        h-15
+    );
+}
+
+function updateModel(){
+
+    let r =
+        parseFloat(
+            document.getElementById("rSlider").value
+        );
+
+    let u0 =
+        parseFloat(
+            document.getElementById("u0Slider").value
+        );
+
+    let u1 =
+        parseFloat(
+            document.getElementById("u1Slider").value
+        );
+
+    document.getElementById("rValue").innerText =
+        r.toFixed(2);
+
+    document.getElementById("u0Value").innerText =
+        u0.toFixed(2);
+
+    document.getElementById("u1Value").innerText =
+        u1.toFixed(2);
+
+    let data =
+        rickerModel(r,u0,u1,80);
+
+    drawGraph(data,r);
+
+    let analysis =
+        analyzeBehavior(data);
+
+    let box =
+        document.getElementById("resultBox");
+
+    box.innerText =
+        analysis.text;
+
+    box.className =
+        "result-box " + analysis.className;
+}
+
+document
+.getElementById("rSlider")
+.addEventListener("input",updateModel);
+
+document
+.getElementById("u0Slider")
+.addEventListener("input",updateModel);
+
+document
+.getElementById("u1Slider")
+.addEventListener("input",updateModel);
+
+updateModel();
+
 </script>
+
 </body>
 </html>
